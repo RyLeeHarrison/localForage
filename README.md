@@ -18,7 +18,7 @@ To use localForage, just drop a single JavaScript file into your page:
 <script src="localforage/dist/localforage.js"></script>
 <script>localforage.getItem('something', myCallback);</script>
 ```
-Try the [live example](http://codepen.io/thgreasi/pen/ojYKeE).
+Try the [live example](https://codepen.io/voxun/pen/XyrbYE).
 
 Download the [latest localForage from GitHub](https://github.com/localForage/localForage/releases/latest), or install with
 [npm](https://www.npmjs.com/):
