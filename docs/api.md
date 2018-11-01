@@ -51,17 +51,17 @@ These APIs deal with getting and setting data in the offline store.
 ## getItem
 
 ```js
-localforage.getItem('somekey').then(function(value) {
+localforage.getItem('somekey').then(value => {
     // This code runs once the value has been loaded
     // from the offline store.
     console.log(value);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
 
 // Callback version:
-localforage.getItem('somekey', function(err, value) {
+localforage.getItem('somekey', (err, value) => {
     // Run this code once the value has been
     // loaded from the offline store.
     console.log(value);
@@ -79,19 +79,19 @@ Gets an item from the storage library and supplies the result to a callback. If 
 ## setItem
 
 ```js
-localforage.setItem('somekey', 'some value').then(function (value) {
+localforage.setItem('somekey', 'some value').then(value => {
     // Do other things once the value has been saved.
     console.log(value);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
 
 // Unlike localStorage, you can store non-strings.
-localforage.setItem('my array', [1, 2, 'three']).then(function(value) {
+localforage.setItem('my array', [1, 2, 'three']).then(value => {
     // This will output `1`.
     console.log(value[0]);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -101,13 +101,13 @@ req = new XMLHttpRequest();
 req.open('GET', '/photo.jpg', true);
 req.responseType = 'arraybuffer';
 
-req.addEventListener('readystatechange', function() {
+req.addEventListener('readystatechange', () => {
     if (req.readyState === 4) { // readyState DONE
-        localforage.setItem('photo', req.response).then(function(image) {
+        localforage.setItem('photo', req.response).then(image => {
             // This will be a valid blob URI for an <img> tag.
-            var blob = new Blob([image]);
-            var imageURI = window.URL.createObjectURL(blob);
-        }).catch(function(err) {
+            const blob = new Blob([image]);
+            const imageURI = window.URL.createObjectURL(blob);
+        }).catch(err => {
           // This code runs if there were any errors
           console.log(err);
         });
@@ -144,10 +144,10 @@ Saves data to an offline store. You can store the following types of JavaScript 
 ## removeItem
 
 ```js
-localforage.removeItem('somekey').then(function() {
+localforage.removeItem('somekey').then(() => {
     // Run this code once the key has been removed.
     console.log('Key is cleared!');
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -162,10 +162,10 @@ Removes the value of a key from the offline store.
 ## clear
 
 ```js
-localforage.clear().then(function() {
+localforage.clear().then(() => {
     // Run this code once the database has been entirely deleted.
     console.log('Database is now empty.');
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -182,10 +182,10 @@ Removes every key from the database, returning it to a blank slate.
 ## length
 
 ```js
-localforage.length().then(function(numberOfKeys) {
+localforage.length().then(numberOfKeys => {
     // Outputs the length of the database.
     console.log(numberOfKeys);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -198,10 +198,10 @@ Gets the number of keys in the offline store (i.e. its "length").
 ## key
 
 ```js
-localforage.key(2).then(function(keyName) {
+localforage.key(2).then(keyName => {
     // Name of the key.
     console.log(keyName);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -218,10 +218,10 @@ Get the name of a key based on its ID.
 ## keys
 
 ```js
-localforage.keys().then(function(keys) {
+localforage.keys().then(keys => {
     // An array of all the key names.
     console.log(keys);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -235,29 +235,29 @@ Get the list of all keys in the datastore.
 
 ```js
 // The same code, but using ES6 Promises.
-localforage.iterate(function(value, key, iterationNumber) {
+localforage.iterate((value, key, iterationNumber) => {
     // Resulting key/value pair -- this callback
     // will be executed for every item in the
     // database.
     console.log([key, value]);
-}).then(function() {
+}).then(() => {
     console.log('Iteration has completed');
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
 
 // Exit the iteration early:
-localforage.iterate(function(value, key, iterationNumber) {
+localforage.iterate((value, key, iterationNumber) => {
     if (iterationNumber < 3) {
         console.log([key, value]);
     } else {
         return [key, value];
     }
-}).then(function(result) {
+}).then(result => {
     console.log('Iteration has completed, last iterated pair:');
     console.log(result);
-}).catch(function(err) {
+}).catch(err => {
     // This code runs if there were any errors
     console.log(err);
 });
@@ -389,36 +389,36 @@ You can write your own, custom driver for localForage since **version 1.1**.
 
 ```js
 // Implement the driver here.
-var myCustomDriver = {
+const myCustomDriver = {
     _driver: 'customDriverUniqueName',
-    _initStorage: function(options) {
+    _initStorage(options) {
         // Custom implementation here...
     },
-    clear: function(callback) {
+    clear(callback) {
         // Custom implementation here...
     },
-    getItem: function(key, callback) {
+    getItem(key, callback) {
         // Custom implementation here...
     },
-    iterate: function(iteratorCallback, successCallback) {
+    iterate(iteratorCallback, successCallback) {
         // Custom implementation here...
     },    
-    key: function(n, callback) {
+    key(n, callback) {
         // Custom implementation here...
     },
-    keys: function(callback) {
+    keys(callback) {
         // Custom implementation here...
     },
-    length: function(callback) {
+    length(callback) {
         // Custom implementation here...
     },
-    removeItem: function(key, callback) {
+    removeItem(key, callback) {
         // Custom implementation here...
     },
-    setItem: function(key, value, callback) {
+    setItem(key, value, callback) {
         // Custom implementation here...
     }
-}
+};
 
 // Add the driver to localForage.
 localforage.defineDriver(myCustomDriver);
@@ -452,11 +452,11 @@ Returns the name of the driver being used, `null` during the asynchronous driver
 ## ready
 
 ```js
-localforage.ready().then(function() {
+localforage.ready().then(() => {
     // This code runs once localforage
     // has fully initialized the selected driver.
     console.log(localforage.driver()); // LocalStorage
-}).catch(function (e) {
+}).catch(e => {
     console.log(e); // `No available storage method found.`
     // One of the cases that `ready()` rejects,
     // is when no usable storage driver is found
@@ -485,11 +485,11 @@ You can create multiple instances of localForage that point to different stores.
 ## createInstance
 
 ```js
-var store = localforage.createInstance({
+const store = localforage.createInstance({
   name: "nameHere"
 });
 
-var otherStore = localforage.createInstance({
+const otherStore = localforage.createInstance({
   name: "otherName"
 });
 
@@ -503,21 +503,21 @@ Creates a new instance of localForage and returns it. Each object contains its o
 ## dropInstance
 
 ```js
-localforage.dropInstance().then(function() {
-  console.log('Dropped the store of the current instance').
+localforage.dropInstance().then(() => {
+  console.log('Dropped the store of the current instance')
 });
 
 localforage.dropInstance({
   name: "otherName",
   storeName: "otherStore"
-}).then(function() {
-  console.log('Dropped otherStore').
+}).then(() => {
+  console.log('Dropped otherStore')
 });
 
 localforage.dropInstance({
   name: "otherName"
-}).then(function() {
-  console.log('Dropped otherName database').
+}).then(() => {
+  console.log('Dropped otherName database')
 });
 ```
 

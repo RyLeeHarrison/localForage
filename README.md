@@ -64,9 +64,9 @@ or [Promises](https://www.promisejs.org/). If you are unsure which one is right 
 Here's an example of the Node-style callback form:
 
 ```js
-localforage.setItem('key', 'value', function (err) {
+localforage.setItem('key', 'value', err => {
   // if err is non-null, we got an error
-  localforage.getItem('key', function (err, value) {
+  localforage.getItem('key', (err, value) => {
     // if err is non-null, we got an error. otherwise, value is the value
   });
 });
@@ -75,11 +75,9 @@ localforage.setItem('key', 'value', function (err) {
 And the Promise form:
 
 ```js
-localforage.setItem('key', 'value').then(function () {
-  return localforage.getItem('key');
-}).then(function (value) {
+localforage.setItem('key', 'value').then(() => localforage.getItem('key')).then(value => {
   // we got our value
-}).catch(function (err) {
+}).catch(err => {
   // we got an error
 });
 ```
@@ -131,11 +129,11 @@ using `createInstance`. All the configuration options used by
 [`config`](#configuration) are supported.
 
 ``` javascript
-var store = localforage.createInstance({
+const store = localforage.createInstance({
   name: "nameHere"
 });
 
-var otherStore = localforage.createInstance({
+const otherStore = localforage.createInstance({
   name: "otherName"
 });
 
@@ -149,7 +147,7 @@ otherStore.setItem("key", "value2");
 You can use localForage with [RequireJS](http://requirejs.org/):
 
 ```javascript
-define(['localforage'], function(localforage) {
+define(['localforage'], localforage => {
     // As a callback:
     localforage.setItem('mykey', 'myvalue', console.log);
 

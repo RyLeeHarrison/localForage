@@ -1,18 +1,18 @@
-(function($) {
-  var $window = $(window);
-  var $document = $(document);
+(($ => {
+  const $window = $(window);
+  const $document = $(document);
 
  /*
   * Scrollspy.
   */
 
- $document.on('flatdoc:ready', function() {
-    $("h2, h3").scrollagent(function(cid, pid, currentElement, previousElement) {
+ $document.on('flatdoc:ready', () => {
+    $("h2, h3").scrollagent((cid, pid, currentElement, previousElement) => {
       if (pid) {
-       $("[href='#"+pid+"']").removeClass('active');
+       $(`[href='#${pid}']`).removeClass('active');
       }
       if (cid) {
-       $("[href='#"+cid+"']").addClass('active');
+       $(`[href='#${cid}']`).addClass('active');
       }
     });
   });
@@ -21,7 +21,7 @@
   * Anchor jump links.
   */
 
- $document.on('flatdoc:ready', function() {
+ $document.on('flatdoc:ready', () => {
    $('.menu a').anchorjump();
  });
 
@@ -29,21 +29,21 @@
   * Title card.
   */
 
-  $(function() {
-    var $card = $('.title-card');
+  $(() => {
+    const $card = $('.title-card');
     if (!$card.length) return;
 
-    var $header = $('.header');
-    var headerHeight = $header.length ? $header.outerHeight() : 0;
+    const $header = $('.header');
+    const headerHeight = $header.length ? $header.outerHeight() : 0;
 
     $window
-      .on('resize.title-card', function() {
-        var windowWidth = $window.width();
+      .on('resize.title-card', () => {
+        const windowWidth = $window.width();
 
         if (windowWidth < 480) {
           $card.css('height', '');
         } else {
-          var height = $window.height();
+          const height = $window.height();
           $card.css('height', height - headerHeight);
         }
       })
@@ -54,24 +54,24 @@
    * Sidebar stick.
    */
 
-  $(function() {
-    var $sidebar = $('.menubar');
-    var elTop;
+  $(() => {
+    const $sidebar = $('.menubar');
+    let elTop;
 
     $window
-      .on('resize.sidestick', function() {
+      .on('resize.sidestick', () => {
         $sidebar.removeClass('fixed');
         elTop = $sidebar.offset().top;
         $window.trigger('scroll.sidestick');
       })
-      .on('scroll.sidestick', function() {
-        var scrollY = $window.scrollTop();
+      .on('scroll.sidestick', () => {
+        const scrollY = $window.scrollTop();
         $sidebar.toggleClass('fixed', (scrollY >= elTop));
       })
       .trigger('resize.sidestick');
   });
 
-})(jQuery);
+}))(jQuery);
 /*! jQuery.scrollagent (c) 2012, Rico Sta. Cruz. MIT License.
  *  https://github.com/rstacruz/jquery-stuff/tree/master/scrollagent */
 
@@ -90,7 +90,7 @@
 //        }
 //      });
 
-(function($) {
+(($ => {
 
   $.fn.scrollagent = function(options, callback) {
     // Account for $.scrollspy(function)
@@ -99,13 +99,13 @@
       options = {};
     }
 
-    var $sections = $(this);
-    var $parent = options.parent || $(window);
+    const $sections = $(this);
+    const $parent = options.parent || $(window);
 
     // Find the top offsets of each section
-    var offsets = [];
+    const offsets = [];
     $sections.each(function(i) {
-      var offset = $(this).attr('data-anchor-offset') ?
+      const offset = $(this).attr('data-anchor-offset') ?
         parseInt($(this).attr('data-anchor-offset'), 10) :
         (options.offset || 0);
 
@@ -113,32 +113,32 @@
         id: $(this).attr('id'),
         index: i,
         el: this,
-        offset: offset
+        offset
       });
     });
 
     // State
-    var current = null;
-    var height = null;
-    var range = null;
+    let current = null;
+    let height = null;
+    let range = null;
 
     // Save the height. Do this only whenever the window is resized so we don't
     // recalculate often.
-    $(window).on('resize', function() {
+    $(window).on('resize', () => {
       height = $parent.height();
       range = $(document).height();
     });
 
     // Find the current active section every scroll tick.
-    $parent.on('scroll', function() {
-      var y = $parent.scrollTop();
-      y += height * (0.3 + 0.7 * Math.pow(y/range, 2));
+    $parent.on('scroll', () => {
+      let y = $parent.scrollTop();
+      y += height * (0.3 + 0.7 * (y/range ** 2));
 
-      var latest = null;
+      let latest = null;
 
-      for (var i in offsets) {
+      for (const i in offsets) {
         if (offsets.hasOwnProperty(i)) {
-          var offset = offsets[i];
+          const offset = offsets[i];
           if ($(offset.el).offset().top + offset.offset < y) latest = offset;
         }
       }
@@ -159,7 +159,7 @@
     return this;
   };
 
-})(jQuery);
+}))(jQuery);
 /*! Anchorjump (c) 2012, Rico Sta. Cruz. MIT License.
  *   http://github.com/rstacruz/jquery-stuff/tree/master/anchorjump */
 
@@ -180,8 +180,8 @@
 //
 //     $.anchorjump('#bank-deposit', options);
 
-(function($) {
-  var defaults = {
+(($ => {
+  const defaults = {
     'speed': 500,
     'offset': 0,
     'for': null,
@@ -198,33 +198,33 @@
     }
 
     function onClick(e) {
-      var $a = $(e.target).closest('a');
+      const $a = $(e.target).closest('a');
       if (e.ctrlKey || e.metaKey || e.altKey || $a.attr('target')) return;
 
       e.preventDefault();
-      var href = $a.attr('href');
+      const href = $a.attr('href');
 
       $.anchorjump(href, options);
     }
   };
 
   // Jump to a given area.
-  $.anchorjump = function(href, options) {
+  $.anchorjump = (href, options) => {
     options = $.extend({}, defaults, options);
 
-    var top = 0;
+    let top = 0;
 
     if (href != '#') {
-      var $area = $(href);
+      let $area = $(href);
       // Find the parent
       if (options.parent) {
-        var $parent = $area.closest(options.parent);
+        const $parent = $area.closest(options.parent);
         if ($parent.length) { $area = $parent; }
       }
       if (!$area.length) { return; }
 
       // Determine the pixel offset; use the default if not available
-      var offset =
+      const offset =
         $area.attr('data-anchor-offset') ?
         parseInt($area.attr('data-anchor-offset'), 10) :
         options.offset;
@@ -237,7 +237,7 @@
 
     // Add the location hash via pushState.
     if (window.history.pushState) {
-      window.history.pushState({ href: href }, "", href);
+      window.history.pushState({ href }, "", href);
     }
   };
-})(jQuery);
+}))(jQuery);
