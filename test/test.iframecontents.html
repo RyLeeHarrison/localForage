@@ -9,10 +9,10 @@
 
     <script src="/dist/localforage.js"></script>
     <script>localforage.setItem('my cool key',
-                                'I have been set').then(function() {
-        localforage.getItem('my cool key').then(function(value) {
-            document.getElementById('my-text').innerHTML = value;
-        });
+                                'I have been set').then(() => {
+      localforage.getItem('my cool key').then(value => {
+        document.getElementById('my-text').innerHTML = value;
+      });
     });</script>
   </body>
 </html>

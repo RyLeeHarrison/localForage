@@ -25,10 +25,10 @@ const READ_WRITE = 'readwrite';
 // From http://stackoverflow.com/questions/14967647/ (continues on next line)
 // encode-decode-image-with-base64-breaks-image (2013-04-21)
 function _binStringToArrayBuffer(bin) {
-    var length = bin.length;
-    var buf = new ArrayBuffer(length);
-    var arr = new Uint8Array(buf);
-    for (var i = 0; i < length; i++) {
+    const length = bin.length;
+    const buf = new ArrayBuffer(length);
+    const arr = new Uint8Array(buf);
+    for (let i = 0; i < length; i++) {
         arr[i] = bin.charCodeAt(i);
     }
     return buf;
@@ -50,12 +50,12 @@ function _binStringToArrayBuffer(bin) {
 // https://github.com/pouchdb/pouchdb/blob/master/packages/node_modules/pouchdb-adapter-idb/src/blobSupport.js
 //
 function _checkBlobSupportWithoutCaching(idb) {
-    return new Promise(function(resolve) {
-        var txn = idb.transaction(DETECT_BLOB_SUPPORT_STORE, READ_WRITE);
-        var blob = createBlob(['']);
+    return new Promise(resolve => {
+        const txn = idb.transaction(DETECT_BLOB_SUPPORT_STORE, READ_WRITE);
+        const blob = createBlob(['']);
         txn.objectStore(DETECT_BLOB_SUPPORT_STORE).put(blob, 'key');
 
-        txn.onabort = function(e) {
+        txn.onabort = e => {
             // If the transaction aborts now its due to not being able to
             // write to the database, likely due to the disk being full
             e.preventDefault();
@@ -63,9 +63,9 @@ function _checkBlobSupportWithoutCaching(idb) {
             resolve(false);
         };
 
-        txn.oncomplete = function() {
-            var matchedChrome = navigator.userAgent.match(/Chrome\/(\d+)/);
-            var matchedEdge = navigator.userAgent.match(/Edge\//);
+        txn.oncomplete = () => {
+            const matchedChrome = navigator.userAgent.match(/Chrome\/(\d+)/);
+            const matchedEdge = navigator.userAgent.match(/Edge\//);
             // MS Edge pretends to be Chrome 42:
             // https://msdn.microsoft.com/en-us/library/hh869301%28v=vs.85%29.aspx
             resolve(
@@ -74,28 +74,30 @@ function _checkBlobSupportWithoutCaching(idb) {
                     parseInt(matchedChrome[1], 10) >= 43
             );
         };
-    }).catch(function() {
-        return false; // error, so assume unsupported
-    });
+    }).catch(
+        () =>
+            // error, so assume unsupported
+            false
+    );
 }
 
 function _checkBlobSupport(idb) {
     if (typeof supportsBlobs === 'boolean') {
         return Promise.resolve(supportsBlobs);
     }
-    return _checkBlobSupportWithoutCaching(idb).then(function(value) {
+    return _checkBlobSupportWithoutCaching(idb).then(value => {
         supportsBlobs = value;
         return supportsBlobs;
     });
 }
 
-function _deferReadiness(dbInfo) {
-    var dbContext = dbContexts[dbInfo.name];
+function _deferReadiness({ name }) {
+    const dbContext = dbContexts[name];
 
     // Create a deferred object representing the current database operation.
-    var deferredOperation = {};
+    const deferredOperation = {};
 
-    deferredOperation.promise = new Promise(function(resolve, reject) {
+    deferredOperation.promise = new Promise((resolve, reject) => {
         deferredOperation.resolve = resolve;
         deferredOperation.reject = reject;
     });
@@ -107,17 +109,17 @@ function _deferReadiness(dbInfo) {
     if (!dbContext.dbReady) {
         dbContext.dbReady = deferredOperation.promise;
     } else {
-        dbContext.dbReady = dbContext.dbReady.then(function() {
-            return deferredOperation.promise;
-        });
+        dbContext.dbReady = dbContext.dbReady.then(
+            () => deferredOperation.promise
+        );
     }
 }
 
-function _advanceReadiness(dbInfo) {
-    var dbContext = dbContexts[dbInfo.name];
+function _advanceReadiness({ name }) {
+    const dbContext = dbContexts[name];
 
     // Dequeue a deferred operation.
-    var deferredOperation = dbContext.deferredOperations.pop();
+    const deferredOperation = dbContext.deferredOperations.pop();
 
     // Resolve its promise (which is part of the database readiness
     // chain of promises).
@@ -127,11 +129,11 @@ function _advanceReadiness(dbInfo) {
     }
 }
 
-function _rejectReadiness(dbInfo, err) {
-    var dbContext = dbContexts[dbInfo.name];
+function _rejectReadiness({ name }, err) {
+    const dbContext = dbContexts[name];
 
     // Dequeue a deferred operation.
-    var deferredOperation = dbContext.deferredOperations.pop();
+    const deferredOperation = dbContext.deferredOperations.pop();
 
     // Reject its promise (which is part of the database readiness
     // chain of promises).
@@ -142,7 +144,7 @@ function _rejectReadiness(dbInfo, err) {
 }
 
 function _getConnection(dbInfo, upgradeNeeded) {
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
         dbContexts[dbInfo.name] = dbContexts[dbInfo.name] || createDbContext();
 
         if (dbInfo.db) {
@@ -154,36 +156,31 @@ function _getConnection(dbInfo, upgradeNeeded) {
             }
         }
 
-        var dbArgs = [dbInfo.name];
+        const dbArgs = [dbInfo.name];
 
         if (upgradeNeeded) {
             dbArgs.push(dbInfo.version);
         }
 
-        var openreq = idb.open.apply(idb, dbArgs);
+        const openreq = idb.open(...dbArgs);
 
         if (upgradeNeeded) {
-            openreq.onupgradeneeded = function(e) {
-                var db = openreq.result;
+            openreq.onupgradeneeded = ({ oldVersion, newVersion }) => {
+                const db = openreq.result;
                 try {
                     db.createObjectStore(dbInfo.storeName);
-                    if (e.oldVersion <= 1) {
+                    if (oldVersion <= 1) {
                         // Added when support for blob shims was added
                         db.createObjectStore(DETECT_BLOB_SUPPORT_STORE);
                     }
                 } catch (ex) {
                     if (ex.name === 'ConstraintError') {
                         console.warn(
-                            'The database "' +
-                                dbInfo.name +
-                                '"' +
-                                ' has been upgraded from version ' +
-                                e.oldVersion +
-                                ' to version ' +
-                                e.newVersion +
-                                ', but the storage "' +
-                                dbInfo.storeName +
-                                '" already exists.'
+                            `The database "${
+                                dbInfo.name
+                            }" has been upgraded from version ${oldVersion} to version ${newVersion}, but the storage "${
+                                dbInfo.storeName
+                            }" already exists.`
                         );
                     } else {
                         throw ex;
@@ -192,12 +189,12 @@ function _getConnection(dbInfo, upgradeNeeded) {
             };
         }
 
-        openreq.onerror = function(e) {
+        openreq.onerror = e => {
             e.preventDefault();
             reject(openreq.error);
         };
 
-        openreq.onsuccess = function() {
+        openreq.onsuccess = () => {
             resolve(openreq.result);
             _advanceReadiness(dbInfo);
         };
@@ -217,23 +214,20 @@ function _isUpgradeNeeded(dbInfo, defaultVersion) {
         return true;
     }
 
-    var isNewStore = !dbInfo.db.objectStoreNames.contains(dbInfo.storeName);
-    var isDowngrade = dbInfo.version < dbInfo.db.version;
-    var isUpgrade = dbInfo.version > dbInfo.db.version;
+    const isNewStore = !dbInfo.db.objectStoreNames.contains(dbInfo.storeName);
+    const isDowngrade = dbInfo.version < dbInfo.db.version;
+    const isUpgrade = dbInfo.version > dbInfo.db.version;
 
     if (isDowngrade) {
         // If the version is not the default one
         // then warn for impossible downgrade.
         if (dbInfo.version !== defaultVersion) {
             console.warn(
-                'The database "' +
-                    dbInfo.name +
-                    '"' +
-                    " can't be downgraded from version " +
-                    dbInfo.db.version +
-                    ' to version ' +
-                    dbInfo.version +
-                    '.'
+                `The database "${
+                    dbInfo.name
+                }" can't be downgraded from version ${
+                    dbInfo.db.version
+                } to version ${dbInfo.version}.`
             );
         }
         // Align the versions to prevent errors.
@@ -245,7 +239,7 @@ function _isUpgradeNeeded(dbInfo, defaultVersion) {
         // This will trigger an "upgradeneeded" event which is required
         // for creating a store.
         if (isNewStore) {
-            var incVersion = dbInfo.db.version + 1;
+            const incVersion = dbInfo.db.version + 1;
             if (incVersion > dbInfo.version) {
                 dbInfo.version = incVersion;
             }
@@ -259,11 +253,11 @@ function _isUpgradeNeeded(dbInfo, defaultVersion) {
 
 // encode a blob for indexeddb engines that don't support blobs
 function _encodeBlob(blob) {
-    return new Promise(function(resolve, reject) {
-        var reader = new FileReader();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
         reader.onerror = reject;
-        reader.onloadend = function(e) {
-            var base64 = btoa(e.target.result || '');
+        reader.onloadend = ({ target }) => {
+            const base64 = btoa(target.result || '');
             resolve({
                 __local_forage_encoded_blob: true,
                 data: base64,
@@ -275,9 +269,9 @@ function _encodeBlob(blob) {
 }
 
 // decode an encoded blob
-function _decodeBlob(encodedBlob) {
-    var arrayBuff = _binStringToArrayBuffer(atob(encodedBlob.data));
-    return createBlob([arrayBuff], { type: encodedBlob.type });
+function _decodeBlob({ data, type }) {
+    const arrayBuff = _binStringToArrayBuffer(atob(data));
+    return createBlob([arrayBuff], { type: type });
 }
 
 // is this one of our fancy encoded blobs?
@@ -290,10 +284,10 @@ function _isEncodedBlob(value) {
 // ready when it's been initialized (default) *and* there are no pending
 // operations on the database (initiated by some other instances).
 function _fullyReady(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = self._initReady().then(function() {
-        var dbContext = dbContexts[self._dbInfo.name];
+    const promise = self._initReady().then(() => {
+        const dbContext = dbContexts[self._dbInfo.name];
 
         if (dbContext && dbContext.dbReady) {
             return dbContext.dbReady;
@@ -310,10 +304,10 @@ function _fullyReady(callback) {
 function _tryReconnect(dbInfo) {
     _deferReadiness(dbInfo);
 
-    var dbContext = dbContexts[dbInfo.name];
-    var forages = dbContext.forages;
+    const dbContext = dbContexts[dbInfo.name];
+    const forages = dbContext.forages;
 
-    for (var i = 0; i < forages.length; i++) {
+    for (let i = 0; i < forages.length; i++) {
         const forage = forages[i];
         if (forage._dbInfo.db) {
             forage._dbInfo.db.close();
@@ -335,7 +329,7 @@ function _tryReconnect(dbInfo) {
             // store the latest db reference
             // in case the db was upgraded
             dbInfo.db = dbContext.db = db;
-            for (var i = 0; i < forages.length; i++) {
+            for (let i = 0; i < forages.length; i++) {
                 forages[i]._dbInfo.db = db;
             }
         })
@@ -353,7 +347,7 @@ function createTransaction(dbInfo, mode, callback, retries) {
     }
 
     try {
-        var tx = dbInfo.db.transaction(dbInfo.storeName, mode);
+        const tx = dbInfo.db.transaction(dbInfo.storeName, mode);
         callback(null, tx);
     } catch (err) {
         if (
@@ -381,7 +375,7 @@ function createTransaction(dbInfo, mode, callback, retries) {
                     }
                 })
                 .then(() => {
-                    return _tryReconnect(dbInfo).then(function() {
+                    return _tryReconnect(dbInfo).then(() => {
                         createTransaction(dbInfo, mode, callback, retries - 1);
                     });
                 })
@@ -408,19 +402,19 @@ function createDbContext() {
 // Open the IndexedDB database (automatically creates one if one didn't
 // previously exist), using any options set in the config.
 function _initStorage(options) {
-    var self = this;
-    var dbInfo = {
+    const self = this;
+    const dbInfo = {
         db: null
     };
 
     if (options) {
-        for (var i in options) {
+        for (const i in options) {
             dbInfo[i] = options[i];
         }
     }
 
     // Get the current context of the database;
-    var dbContext = dbContexts[dbInfo.name];
+    let dbContext = dbContexts[dbInfo.name];
 
     // ...or create a new context.
     if (!dbContext) {
@@ -439,7 +433,7 @@ function _initStorage(options) {
     }
 
     // Create an array of initialization states of the related localForages.
-    var initPromises = [];
+    const initPromises = [];
 
     function ignoreErrors() {
         // Don't handle errors here,
@@ -447,8 +441,8 @@ function _initStorage(options) {
         return Promise.resolve();
     }
 
-    for (var j = 0; j < dbContext.forages.length; j++) {
-        var forage = dbContext.forages[j];
+    for (let j = 0; j < dbContext.forages.length; j++) {
+        const forage = dbContext.forages[j];
         if (forage !== self) {
             // Don't wait for itself...
             initPromises.push(forage._initReady().catch(ignoreErrors));
@@ -456,17 +450,17 @@ function _initStorage(options) {
     }
 
     // Take a snapshot of the related localForages.
-    var forages = dbContext.forages.slice(0);
+    const forages = dbContext.forages.slice(0);
 
     // Initialize the connection process only when
     // all the related localForages aren't pending.
     return Promise.all(initPromises)
-        .then(function() {
+        .then(() => {
             dbInfo.db = dbContext.db;
             // Get the connection or open a new one without upgrade.
             return _getOriginalConnection(dbInfo);
         })
-        .then(function(db) {
+        .then(db => {
             dbInfo.db = db;
             if (_isUpgradeNeeded(dbInfo, self._defaultConfig.version)) {
                 // Reopen the database for upgrading.
@@ -474,12 +468,12 @@ function _initStorage(options) {
             }
             return db;
         })
-        .then(function(db) {
+        .then(db => {
             dbInfo.db = dbContext.db = db;
             self._dbInfo = dbInfo;
             // Share the final connection amongst related localForages.
-            for (var k = 0; k < forages.length; k++) {
-                var forage = forages[k];
+            for (let k = 0; k < forages.length; k++) {
+                const forage = forages[k];
                 if (forage !== self) {
                     // Self is already up-to-date.
                     forage._dbInfo.db = dbInfo.db;
@@ -490,46 +484,47 @@ function _initStorage(options) {
 }
 
 function getItem(key, callback) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_ONLY, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_ONLY,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            const req = store.get(key);
+
+                            req.onsuccess = () => {
+                                let value = req.result;
+                                if (value === undefined) {
+                                    value = null;
+                                }
+                                if (_isEncodedBlob(value)) {
+                                    value = _decodeBlob(value);
+                                }
+                                resolve(value);
+                            };
+
+                            req.onerror = () => {
+                                reject(req.error);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var req = store.get(key);
-
-                        req.onsuccess = function() {
-                            var value = req.result;
-                            if (value === undefined) {
-                                value = null;
-                            }
-                            if (_isEncodedBlob(value)) {
-                                value = _decodeBlob(value);
-                            }
-                            resolve(value);
-                        };
-
-                        req.onerror = function() {
-                            reject(req.error);
-                        };
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+                );
             })
             .catch(reject);
     });
@@ -540,61 +535,62 @@ function getItem(key, callback) {
 
 // Iterate over all items stored in database.
 function iterate(iterator, callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_ONLY, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
-                    }
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_ONLY,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
 
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var req = store.openCursor();
-                        var iterationNumber = 1;
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            const req = store.openCursor();
+                            let iterationNumber = 1;
 
-                        req.onsuccess = function() {
-                            var cursor = req.result;
+                            req.onsuccess = () => {
+                                const cursor = req.result;
 
-                            if (cursor) {
-                                var value = cursor.value;
-                                if (_isEncodedBlob(value)) {
-                                    value = _decodeBlob(value);
-                                }
-                                var result = iterator(
-                                    value,
-                                    cursor.key,
-                                    iterationNumber++
-                                );
+                                if (cursor) {
+                                    let value = cursor.value;
+                                    if (_isEncodedBlob(value)) {
+                                        value = _decodeBlob(value);
+                                    }
+                                    const result = iterator(
+                                        value,
+                                        cursor.key,
+                                        iterationNumber++
+                                    );
 
-                                // when the iterator callback retuns any
-                                // (non-`undefined`) value, then we stop
-                                // the iteration immediately
-                                if (result !== void 0) {
-                                    resolve(result);
+                                    // when the iterator callback retuns any
+                                    // (non-`undefined`) value, then we stop
+                                    // the iteration immediately
+                                    if (result !== void 0) {
+                                        resolve(result);
+                                    } else {
+                                        cursor.continue();
+                                    }
                                 } else {
-                                    cursor.continue();
+                                    resolve();
                                 }
-                            } else {
-                                resolve();
-                            }
-                        };
+                            };
 
-                        req.onerror = function() {
-                            reject(req.error);
-                        };
-                    } catch (e) {
-                        reject(e);
+                            req.onerror = () => {
+                                reject(req.error);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-                });
+                );
             })
             .catch(reject);
     });
@@ -605,20 +601,18 @@ function iterate(iterator, callback) {
 }
 
 function setItem(key, value, callback) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
-        var dbInfo;
+    const promise = new Promise((resolve, reject) => {
+        let dbInfo;
         self
             .ready()
-            .then(function() {
+            .then(() => {
                 dbInfo = self._dbInfo;
                 if (toString.call(value) === '[object Blob]') {
-                    return _checkBlobSupport(dbInfo.db).then(function(
-                        blobSupport
-                    ) {
+                    return _checkBlobSupport(dbInfo.db).then(blobSupport => {
                         if (blobSupport) {
                             return value;
                         }
@@ -627,53 +621,54 @@ function setItem(key, value, callback) {
                 }
                 return value;
             })
-            .then(function(value) {
-                createTransaction(self._dbInfo, READ_WRITE, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
-                    }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-
-                        // The reason we don't _save_ null is because IE 10 does
-                        // not support saving the `null` type in IndexedDB. How
-                        // ironic, given the bug below!
-                        // See: https://github.com/mozilla/localForage/issues/161
-                        if (value === null) {
-                            value = undefined;
+            .then(value => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_WRITE,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
                         }
 
-                        var req = store.put(value, key);
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
 
-                        transaction.oncomplete = function() {
-                            // Cast to undefined so the value passed to
-                            // callback/promise is the same as what one would get out
-                            // of `getItem()` later. This leads to some weirdness
-                            // (setItem('foo', undefined) will return `null`), but
-                            // it's not my fault localStorage is our baseline and that
-                            // it's weird.
-                            if (value === undefined) {
-                                value = null;
+                            // The reason we don't _save_ null is because IE 10 does
+                            // not support saving the `null` type in IndexedDB. How
+                            // ironic, given the bug below!
+                            // See: https://github.com/mozilla/localForage/issues/161
+                            if (value === null) {
+                                value = undefined;
                             }
 
-                            resolve(value);
-                        };
-                        transaction.onabort = transaction.onerror = function() {
-                            var err = req.error
-                                ? req.error
-                                : req.transaction.error;
-                            reject(err);
-                        };
-                    } catch (e) {
-                        reject(e);
+                            const req = store.put(value, key);
+
+                            transaction.oncomplete = () => {
+                                // Cast to undefined so the value passed to
+                                // callback/promise is the same as what one would get out
+                                // of `getItem()` later. This leads to some weirdness
+                                // (setItem('foo', undefined) will return `null`), but
+                                // it's not my fault localStorage is our baseline and that
+                                // it's weird.
+                                if (value === undefined) {
+                                    value = null;
+                                }
+
+                                resolve(value);
+                            };
+                            transaction.onabort = transaction.onerror = () => {
+                                const err = req.error
+                                    ? req.error
+                                    : req.transaction.error;
+                                reject(err);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-                });
+                );
             })
             .catch(reject);
     });
@@ -683,52 +678,53 @@ function setItem(key, value, callback) {
 }
 
 function removeItem(key, callback) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_WRITE, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_WRITE,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            // We use a Grunt task to make this safe for IE and some
+                            // versions of Android (including those used by Cordova).
+                            // Normally IE won't like `.delete()` and will insist on
+                            // using `['delete']()`, but we have a build step that
+                            // fixes this for us now.
+                            const req = store.delete(key);
+                            transaction.oncomplete = () => {
+                                resolve();
+                            };
+
+                            transaction.onerror = () => {
+                                reject(req.error);
+                            };
+
+                            // The request will be also be aborted if we've exceeded our storage
+                            // space.
+                            transaction.onabort = () => {
+                                const err = req.error
+                                    ? req.error
+                                    : req.transaction.error;
+                                reject(err);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        // We use a Grunt task to make this safe for IE and some
-                        // versions of Android (including those used by Cordova).
-                        // Normally IE won't like `.delete()` and will insist on
-                        // using `['delete']()`, but we have a build step that
-                        // fixes this for us now.
-                        var req = store.delete(key);
-                        transaction.oncomplete = function() {
-                            resolve();
-                        };
-
-                        transaction.onerror = function() {
-                            reject(req.error);
-                        };
-
-                        // The request will be also be aborted if we've exceeded our storage
-                        // space.
-                        transaction.onabort = function() {
-                            var err = req.error
-                                ? req.error
-                                : req.transaction.error;
-                            reject(err);
-                        };
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+                );
             })
             .catch(reject);
     });
@@ -738,40 +734,41 @@ function removeItem(key, callback) {
 }
 
 function clear(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_WRITE, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_WRITE,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            const req = store.clear();
+
+                            transaction.oncomplete = () => {
+                                resolve();
+                            };
+
+                            transaction.onabort = transaction.onerror = () => {
+                                const err = req.error
+                                    ? req.error
+                                    : req.transaction.error;
+                                reject(err);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var req = store.clear();
-
-                        transaction.oncomplete = function() {
-                            resolve();
-                        };
-
-                        transaction.onabort = transaction.onerror = function() {
-                            var err = req.error
-                                ? req.error
-                                : req.transaction.error;
-                            reject(err);
-                        };
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+                );
             })
             .catch(reject);
     });
@@ -781,37 +778,38 @@ function clear(callback) {
 }
 
 function length(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_ONLY, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_ONLY,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            const req = store.count();
+
+                            req.onsuccess = () => {
+                                resolve(req.result);
+                            };
+
+                            req.onerror = () => {
+                                reject(req.error);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var req = store.count();
-
-                        req.onsuccess = function() {
-                            resolve(req.result);
-                        };
-
-                        req.onerror = function() {
-                            reject(req.error);
-                        };
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+                );
             })
             .catch(reject);
     });
@@ -821,9 +819,9 @@ function length(callback) {
 }
 
 function key(n, callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         if (n < 0) {
             resolve(null);
 
@@ -832,55 +830,56 @@ function key(n, callback) {
 
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_ONLY, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
-                    }
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_ONLY,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
 
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var advanced = false;
-                        var req = store.openCursor();
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            let advanced = false;
+                            const req = store.openCursor();
 
-                        req.onsuccess = function() {
-                            var cursor = req.result;
-                            if (!cursor) {
-                                // this means there weren't enough keys
-                                resolve(null);
+                            req.onsuccess = () => {
+                                const cursor = req.result;
+                                if (!cursor) {
+                                    // this means there weren't enough keys
+                                    resolve(null);
 
-                                return;
-                            }
-
-                            if (n === 0) {
-                                // We have the first key, return it if that's what they
-                                // wanted.
-                                resolve(cursor.key);
-                            } else {
-                                if (!advanced) {
-                                    // Otherwise, ask the cursor to skip ahead n
-                                    // records.
-                                    advanced = true;
-                                    cursor.advance(n);
-                                } else {
-                                    // When we get here, we've got the nth key.
-                                    resolve(cursor.key);
+                                    return;
                                 }
-                            }
-                        };
 
-                        req.onerror = function() {
-                            reject(req.error);
-                        };
-                    } catch (e) {
-                        reject(e);
+                                if (n === 0) {
+                                    // We have the first key, return it if that's what they
+                                    // wanted.
+                                    resolve(cursor.key);
+                                } else {
+                                    if (!advanced) {
+                                        // Otherwise, ask the cursor to skip ahead n
+                                        // records.
+                                        advanced = true;
+                                        cursor.advance(n);
+                                    } else {
+                                        // When we get here, we've got the nth key.
+                                        resolve(cursor.key);
+                                    }
+                                }
+                            };
+
+                            req.onerror = () => {
+                                reject(req.error);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-                });
+                );
             })
             .catch(reject);
     });
@@ -890,46 +889,47 @@ function key(n, callback) {
 }
 
 function keys(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                createTransaction(self._dbInfo, READ_ONLY, function(
-                    err,
-                    transaction
-                ) {
-                    if (err) {
-                        return reject(err);
+            .then(() => {
+                createTransaction(
+                    self._dbInfo,
+                    READ_ONLY,
+                    (err, transaction) => {
+                        if (err) {
+                            return reject(err);
+                        }
+
+                        try {
+                            const store = transaction.objectStore(
+                                self._dbInfo.storeName
+                            );
+                            const req = store.openCursor();
+                            const keys = [];
+
+                            req.onsuccess = () => {
+                                const cursor = req.result;
+
+                                if (!cursor) {
+                                    resolve(keys);
+                                    return;
+                                }
+
+                                keys.push(cursor.key);
+                                cursor.continue();
+                            };
+
+                            req.onerror = () => {
+                                reject(req.error);
+                            };
+                        } catch (e) {
+                            reject(e);
+                        }
                     }
-
-                    try {
-                        var store = transaction.objectStore(
-                            self._dbInfo.storeName
-                        );
-                        var req = store.openCursor();
-                        var keys = [];
-
-                        req.onsuccess = function() {
-                            var cursor = req.result;
-
-                            if (!cursor) {
-                                resolve(keys);
-                                return;
-                            }
-
-                            keys.push(cursor.key);
-                            cursor.continue();
-                        };
-
-                        req.onerror = function() {
-                            reject(req.error);
-                        };
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+                );
             })
             .catch(reject);
     });
@@ -941,15 +941,15 @@ function keys(callback) {
 function dropInstance(options, callback) {
     callback = getCallback.apply(this, arguments);
 
-    var currentConfig = this.config();
+    const currentConfig = this.config();
     options = (typeof options !== 'function' && options) || {};
     if (!options.name) {
         options.name = options.name || currentConfig.name;
         options.storeName = options.storeName || currentConfig.storeName;
     }
 
-    var self = this;
-    var promise;
+    const self = this;
+    let promise;
     if (!options.name) {
         promise = Promise.reject('Invalid arguments');
     } else {
@@ -962,7 +962,7 @@ function dropInstance(options, callback) {
                   const dbContext = dbContexts[options.name];
                   const forages = dbContext.forages;
                   dbContext.db = db;
-                  for (var i = 0; i < forages.length; i++) {
+                  for (let i = 0; i < forages.length; i++) {
                       forages[i]._dbInfo.db = db;
                   }
                   return db;
@@ -976,13 +976,13 @@ function dropInstance(options, callback) {
                 const forages = dbContext.forages;
 
                 db.close();
-                for (var i = 0; i < forages.length; i++) {
+                for (let i = 0; i < forages.length; i++) {
                     const forage = forages[i];
                     forage._dbInfo.db = null;
                 }
 
                 const dropDBPromise = new Promise((resolve, reject) => {
-                    var req = idb.deleteDatabase(options.name);
+                    const req = idb.deleteDatabase(options.name);
 
                     req.onerror = req.onblocked = err => {
                         const db = req.result;
@@ -1004,7 +1004,7 @@ function dropInstance(options, callback) {
                 return dropDBPromise
                     .then(db => {
                         dbContext.db = db;
-                        for (var i = 0; i < forages.length; i++) {
+                        for (let i = 0; i < forages.length; i++) {
                             const forage = forages[i];
                             _advanceReadiness(forage._dbInfo);
                         }
@@ -1030,8 +1030,8 @@ function dropInstance(options, callback) {
                 const forages = dbContext.forages;
 
                 db.close();
-                for (let i = 0; i < forages.length; i++) {
-                    const forage = forages[i];
+
+                for (const forage of forages) {
                     forage._dbInfo.db = null;
                     forage._dbInfo.version = newVersion;
                 }
@@ -1046,7 +1046,7 @@ function dropInstance(options, callback) {
                     };
 
                     req.onupgradeneeded = () => {
-                        var db = req.result;
+                        const db = req.result;
                         db.deleteObjectStore(options.storeName);
                     };
 
@@ -1060,8 +1060,8 @@ function dropInstance(options, callback) {
                 return dropObjectPromise
                     .then(db => {
                         dbContext.db = db;
-                        for (let j = 0; j < forages.length; j++) {
-                            const forage = forages[j];
+
+                        for (const forage of forages) {
                             forage._dbInfo.db = db;
                             _advanceReadiness(forage._dbInfo);
                         }
@@ -1080,18 +1080,18 @@ function dropInstance(options, callback) {
     return promise;
 }
 
-var asyncStorage = {
+const asyncStorage = {
     _driver: 'asyncStorage',
-    _initStorage: _initStorage,
+    _initStorage,
     _support: isIndexedDBValid(),
-    iterate: iterate,
-    getItem: getItem,
-    setItem: setItem,
-    removeItem: removeItem,
-    clear: clear,
-    length: length,
-    key: key,
-    keys: keys,
-    dropInstance: dropInstance
+    iterate,
+    getItem,
+    setItem,
+    removeItem,
+    clear,
+    length,
+    key,
+    keys,
+    dropInstance
 };
 export default asyncStorage;

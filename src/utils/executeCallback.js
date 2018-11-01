@@ -1,10 +1,10 @@
 function executeCallback(promise, callback) {
     if (callback) {
         promise.then(
-            function(result) {
+            result => {
                 callback(null, result);
             },
-            function(error) {
+            error => {
                 callback(error);
             }
         );

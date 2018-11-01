@@ -8,24 +8,24 @@
     <script src="../dist/localforage.js"></script>
     <script>
       // Forcing localstorage here. Feel free to switch to other drivers :)
-      localforage.setDriver(localforage.LOCALSTORAGE).then(function() {
-        var key = 'STORE_KEY';
+      localforage.setDriver(localforage.LOCALSTORAGE).then(() => {
+        const key = 'STORE_KEY';
         // var value = 'What we save offline';
-        var value = new Uint8Array(8);
+        const value = new Uint8Array(8);
         value[0] = 65
         // var value = undefined;
-        var UNKNOWN_KEY = 'unknown_key';
+        const UNKNOWN_KEY = 'unknown_key';
 
-        localforage.setItem(key, value, function() {
-          console.log('Saved: ' + value);
+        localforage.setItem(key, value, () => {
+          console.log(`Saved: ${value}`);
 
-          localforage.getItem(key, function(err, readValue) {
+          localforage.getItem(key, (err, readValue) => {
             console.log('Read: ', readValue);
           });
 
           // Since this key hasn't been set yet, we'll get a null value
-          localforage.getItem(UNKNOWN_KEY, function(err, readValue) {
-            console.log('Result of reading ' + UNKNOWN_KEY, readValue);
+          localforage.getItem(UNKNOWN_KEY, (err, readValue) => {
+            console.log(`Result of reading ${UNKNOWN_KEY}`, readValue);
           });
         });
       });

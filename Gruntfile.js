@@ -1,25 +1,18 @@
 var path = require('path');
-var saucelabsBrowsers = require(path.resolve('test', 'saucelabs-browsers.js'));
+const saucelabsBrowsers = require(path.resolve('test', 'saucelabs-browsers.js'));
 
-var sourceFiles = [
+const sourceFiles = [
     'Gruntfile.js',
     'src/*.js',
     'src/**/*.js',
     'test/**/test.*.js'
 ];
 
-module.exports = exports = function(grunt) {
-    'use strict';
+module.exports = exports = grunt => {
+    const BANNER = `/*!\n    localForage -- Offline Storage, Improved\n    Version ${grunt.file.readJSON('package.json').version}\n    https://localforage.github.io/localForage\n    (c) 2013-2017 Mozilla, Apache License 2.0\n*/\n`;
 
-    var BANNER = '/*!\n' +
-                 '    localForage -- Offline Storage, Improved\n' +
-                 '    Version ' + grunt.file.readJSON('package.json').version + '\n' +
-                 '    https://localforage.github.io/localForage\n' +
-                 '    (c) 2013-2017 Mozilla, Apache License 2.0\n' +
-                 '*/\n';
-
-    var babelModuleIdProvider = function getModuleId(moduleName) {
-        var files = {
+    const babelModuleIdProvider = (moduleName) => { // getModuleId
+        const files = {
             'src/localforage': 'localforage',
             'src/utils/serializer': 'localforageSerializer',
             'src/drivers/indexeddb': 'asyncStorage',
@@ -105,13 +98,13 @@ module.exports = exports = function(grunt) {
                     base: '.',
                     hostname: '*',
                     port: 9999,
-                    middleware: function(connect) {
+                    middleware(connect) {
                         return [
-                            function(req, res, next) {
+                            (req, res, next) => {
                                 res.setHeader('Access-Control-Allow-Origin',
-                                              '*');
+                                                '*');
                                 res.setHeader('Access-Control-Allow-Methods',
-                                              '*');
+                                                '*');
 
                                 return next();
                             },
@@ -229,7 +222,7 @@ module.exports = exports = function(grunt) {
     grunt.registerTask('serve', ['build', 'connect:test', 'watch']);
 
     // These are the test tasks we run regardless of Sauce Labs credentials.
-    var testTasks = [
+    const testTasks = [
         'build',
         'babel',
         'eslint',

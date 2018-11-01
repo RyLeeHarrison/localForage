@@ -51,35 +51,32 @@ const DefaultConfig = {
 };
 
 function callWhenReady(localForageInstance, libraryMethod) {
-    localForageInstance[libraryMethod] = function() {
-        const _args = arguments;
-        return localForageInstance.ready().then(function() {
-            return localForageInstance[libraryMethod].apply(
-                localForageInstance,
-                _args
-            );
-        });
+    localForageInstance[libraryMethod] = (...args) => {
+        const _args = args;
+        return localForageInstance
+            .ready()
+            .then(() => localForageInstance[libraryMethod](..._args));
     };
 }
 
-function extend() {
-    for (let i = 1; i < arguments.length; i++) {
-        const arg = arguments[i];
+function extend(...args) {
+    for (let i = 1; i < args.length; i++) {
+        const arg = args[i];
 
         if (arg) {
             for (let key in arg) {
                 if (arg.hasOwnProperty(key)) {
                     if (isArray(arg[key])) {
-                        arguments[0][key] = arg[key].slice();
+                        args[0][key] = arg[key].slice();
                     } else {
-                        arguments[0][key] = arg[key];
+                        args[0][key] = arg[key];
                     }
                 }
             }
         }
     }
 
-    return arguments[0];
+    return args[0];
 }
 
 class LocalForage {
@@ -156,7 +153,7 @@ class LocalForage {
     // Used to define a custom driver, shared across all instances of
     // localForage.
     defineDriver(driverObject, callback, errorCallback) {
-        const promise = new Promise(function(resolve, reject) {
+        const promise = new Promise((resolve, reject) => {
             try {
                 const driverName = driverObject._driver;
                 const complianceError = new Error(
@@ -190,19 +187,16 @@ class LocalForage {
                     }
                 }
 
-                const configureMissingMethods = function() {
-                    const methodNotImplementedFactory = function(methodName) {
-                        return function() {
-                            const error = new Error(
-                                `Method ${methodName} is not implemented by the current driver`
-                            );
-                            const promise = Promise.reject(error);
-                            executeCallback(
-                                promise,
-                                arguments[arguments.length - 1]
-                            );
-                            return promise;
-                        };
+                const configureMissingMethods = () => {
+                    const methodNotImplementedFactory = methodName => (
+                        ...args
+                    ) => {
+                        const error = new Error(
+                            `Method ${methodName} is not implemented by the current driver`
+                        );
+                        const promise = Promise.reject(error);
+                        executeCallback(promise, args[args.length - 1]);
+                        return promise;
                     };
 
                     for (
@@ -223,7 +217,7 @@ class LocalForage {
 
                 configureMissingMethods();
 
-                const setDriverSupport = function(support) {
+                const setDriverSupport = support => {
                     if (DefinedDrivers[driverName]) {
                         console.info(
                             `Redefining LocalForage driver: ${driverName}`
@@ -314,7 +308,7 @@ class LocalForage {
         }
 
         function initDriver(supportedDrivers) {
-            return function() {
+            return () => {
                 let currentDriverIndex = 0;
 
                 function driverPromiseLoop() {
@@ -357,8 +351,8 @@ class LocalForage {
                 self._dbInfo = null;
                 self._ready = null;
 
-                return self.getDriver(driverName).then(driver => {
-                    self._driver = driver._driver;
+                return self.getDriver(driverName).then(({ _driver }) => {
+                    self._driver = _driver;
                     setDriverToConfig();
                     self._wrapLibraryMethodsWithReady();
                     self._initDriver = initDriver(supportedDrivers);

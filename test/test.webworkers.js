@@ -1,11 +1,11 @@
 /* global before:true, beforeEach:true, describe:true, expect:true, it:true, Modernizr:true */
-var DRIVERS = [
+const DRIVERS = [
     localforage.INDEXEDDB,
     localforage.LOCALSTORAGE,
     localforage.WEBSQL
 ];
 
-DRIVERS.forEach(function(driverName) {
+DRIVERS.forEach(driverName => {
     if (
         (!localforage.supports(localforage.INDEXEDDB) &&
             driverName === localforage.INDEXEDDB) ||
@@ -19,14 +19,12 @@ DRIVERS.forEach(function(driverName) {
         return;
     }
 
-    describe('Web Worker support in ' + driverName, function() {
-        'use strict';
-
-        before(function(done) {
+    describe(`Web Worker support in ${driverName}`, () => {
+        before(done => {
             localforage.setDriver(driverName).then(done);
         });
 
-        beforeEach(function(done) {
+        beforeEach(done => {
             localforage.clear(done);
         });
 
@@ -39,22 +37,22 @@ DRIVERS.forEach(function(driverName) {
             driverName === localforage.LOCALSTORAGE ||
             driverName === localforage.WEBSQL
         ) {
-            it.skip(driverName + ' is not supported in web workers');
+            it.skip(`${driverName} is not supported in web workers`);
             return;
         }
 
-        it('saves data', function(done) {
-            var webWorker = new Worker('/test/webworker-client.js');
+        it('saves data', done => {
+            const webWorker = new Worker('/test/webworker-client.js');
 
-            webWorker.addEventListener('message', function(e) {
-                var body = e.data.body;
+            webWorker.addEventListener('message', ({ data }) => {
+                const body = data.body;
 
                 window.console.log(body);
                 expect(body).to.be('I have been set');
                 done();
             });
 
-            webWorker.addEventListener('error', function(e) {
+            webWorker.addEventListener('error', e => {
                 window.console.log(e);
             });
 

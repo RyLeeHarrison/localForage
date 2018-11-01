@@ -1,15 +1,13 @@
 (function() {
-    'use strict';
-
-    var dummyStorage = {};
+    const dummyStorage = {};
 
     // Config the localStorage backend, using options set in the config.
     function _initStorage(options) {
-        var self = this;
+        const self = this;
 
-        var dbInfo = {};
+        const dbInfo = {};
         if (options) {
-            for (var i in options) {
+            for (const i in options) {
                 dbInfo[i] = options[i];
             }
         }
@@ -20,33 +18,33 @@
         return Promise.resolve();
     }
 
-    var SERIALIZED_MARKER = '__lfsc__:';
-    var SERIALIZED_MARKER_LENGTH = SERIALIZED_MARKER.length;
+    const SERIALIZED_MARKER = '__lfsc__:';
+    const SERIALIZED_MARKER_LENGTH = SERIALIZED_MARKER.length;
 
     // OMG the serializations!
-    var TYPE_ARRAYBUFFER = 'arbf';
-    var TYPE_BLOB = 'blob';
-    var TYPE_INT8ARRAY = 'si08';
-    var TYPE_UINT8ARRAY = 'ui08';
-    var TYPE_UINT8CLAMPEDARRAY = 'uic8';
-    var TYPE_INT16ARRAY = 'si16';
-    var TYPE_INT32ARRAY = 'si32';
-    var TYPE_UINT16ARRAY = 'ur16';
-    var TYPE_UINT32ARRAY = 'ui32';
-    var TYPE_FLOAT32ARRAY = 'fl32';
-    var TYPE_FLOAT64ARRAY = 'fl64';
-    var TYPE_SERIALIZED_MARKER_LENGTH =
+    const TYPE_ARRAYBUFFER = 'arbf';
+    const TYPE_BLOB = 'blob';
+    const TYPE_INT8ARRAY = 'si08';
+    const TYPE_UINT8ARRAY = 'ui08';
+    const TYPE_UINT8CLAMPEDARRAY = 'uic8';
+    const TYPE_INT16ARRAY = 'si16';
+    const TYPE_INT32ARRAY = 'si32';
+    const TYPE_UINT16ARRAY = 'ur16';
+    const TYPE_UINT32ARRAY = 'ui32';
+    const TYPE_FLOAT32ARRAY = 'fl32';
+    const TYPE_FLOAT64ARRAY = 'fl64';
+    const TYPE_SERIALIZED_MARKER_LENGTH =
         SERIALIZED_MARKER_LENGTH + TYPE_ARRAYBUFFER.length;
 
     function clear(callback) {
-        var self = this;
-        var promise = new Promise(function(resolve, reject) {
+        const self = this;
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
-                    var db = self._dbInfo.db;
+                .then(() => {
+                    const db = self._dbInfo.db;
 
-                    for (var key in db) {
+                    for (const key in db) {
                         if (db.hasOwnProperty(key)) {
                             delete db[key];
                             // db[key] = undefined;
@@ -63,23 +61,23 @@
     }
 
     function getItem(key, callback) {
-        var self = this;
+        const self = this;
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
             window.console.warn(
-                key + ' used as a key, but it is not a string.'
+                `${key} used as a key, but it is not a string.`
             );
             key = String(key);
         }
 
-        var promise = new Promise(function(resolve, reject) {
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
+                .then(() => {
                     try {
-                        var db = self._dbInfo.db;
-                        var result = db[key];
+                        const db = self._dbInfo.db;
+                        let result = db[key];
 
                         if (result) {
                             result = _deserialize(result);
@@ -98,17 +96,17 @@
     }
 
     function iterate(callback) {
-        var self = this;
+        const self = this;
 
-        var promise = new Promise(function(resolve, reject) {
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
+                .then(() => {
                     try {
-                        var db = self._dbInfo.db;
+                        const db = self._dbInfo.db;
 
-                        for (var key in db) {
-                            var result = db[key];
+                        for (const key in db) {
+                            let result = db[key];
 
                             if (result) {
                                 result = _deserialize(result);
@@ -130,16 +128,16 @@
     }
 
     function key(n, callback) {
-        var self = this;
-        var promise = new Promise(function(resolve, reject) {
+        const self = this;
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
-                    var db = self._dbInfo.db;
-                    var result = null;
-                    var index = 0;
+                .then(() => {
+                    const db = self._dbInfo.db;
+                    let result = null;
+                    let index = 0;
 
-                    for (var key in db) {
+                    for (const key in db) {
                         if (db.hasOwnProperty(key) && db[key] !== undefined) {
                             if (n === index) {
                                 result = key;
@@ -159,15 +157,15 @@
     }
 
     function keys(callback) {
-        var self = this;
-        var promise = new Promise(function(resolve, reject) {
+        const self = this;
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
-                    var db = self._dbInfo.db;
-                    var keys = [];
+                .then(() => {
+                    const db = self._dbInfo.db;
+                    const keys = [];
 
-                    for (var key in db) {
+                    for (const key in db) {
                         if (db.hasOwnProperty(key)) {
                             keys.push(key);
                         }
@@ -183,11 +181,11 @@
     }
 
     function length(callback) {
-        var self = this;
-        var promise = new Promise(function(resolve, reject) {
+        const self = this;
+        const promise = new Promise((resolve, reject) => {
             self
                 .keys()
-                .then(function(keys) {
+                .then(keys => {
                     resolve(keys.length);
                 })
                 .catch(reject);
@@ -198,21 +196,21 @@
     }
 
     function removeItem(key, callback) {
-        var self = this;
+        const self = this;
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
             window.console.warn(
-                key + ' used as a key, but it is not a string.'
+                `${key} used as a key, but it is not a string.`
             );
             key = String(key);
         }
 
-        var promise = new Promise(function(resolve, reject) {
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
-                    var db = self._dbInfo.db;
+                .then(() => {
+                    const db = self._dbInfo.db;
                     if (db.hasOwnProperty(key)) {
                         delete db[key];
                         // db[key] = undefined;
@@ -228,20 +226,20 @@
     }
 
     function setItem(key, value, callback) {
-        var self = this;
+        const self = this;
 
         // Cast the key to a string, as that's all we can set as a key.
         if (typeof key !== 'string') {
             window.console.warn(
-                key + ' used as a key, but it is not a string.'
+                `${key} used as a key, but it is not a string.`
             );
             key = String(key);
         }
 
-        var promise = new Promise(function(resolve, reject) {
+        const promise = new Promise((resolve, reject) => {
             self
                 .ready()
-                .then(function() {
+                .then(() => {
                     // Convert undefined values to null.
                     // https://github.com/mozilla/localForage/pull/42
                     if (value === undefined) {
@@ -249,14 +247,14 @@
                     }
 
                     // Save the original value to pass to the callback.
-                    var originalValue = value;
+                    const originalValue = value;
 
-                    _serialize(value, function(value, error) {
+                    _serialize(value, (value, error) => {
                         if (error) {
                             reject(error);
                         } else {
                             try {
-                                var db = self._dbInfo.db;
+                                const db = self._dbInfo.db;
                                 db[key] = value;
                                 resolve(originalValue);
                             } catch (e) {
@@ -274,7 +272,7 @@
 
     // _serialize just like in LocalStorage
     function _serialize(value, callback) {
-        var valueString = '';
+        let valueString = '';
         if (value) {
             valueString = value.toString();
         }
@@ -291,8 +289,8 @@
         ) {
             // Convert binary arrays to a string and prefix the string with
             // a special marker.
-            var buffer;
-            var marker = SERIALIZED_MARKER;
+            let buffer;
+            let marker = SERIALIZED_MARKER;
 
             if (value instanceof ArrayBuffer) {
                 buffer = value;
@@ -326,10 +324,10 @@
             callback(marker + _bufferToString(buffer));
         } else if (valueString === '[object Blob]') {
             // Conver the blob to a binaryArray and then to a string.
-            var fileReader = new FileReader();
+            const fileReader = new FileReader();
 
             fileReader.onload = function() {
-                var str = _bufferToString(this.result);
+                const str = _bufferToString(this.result);
 
                 callback(SERIALIZED_MARKER + TYPE_BLOB + str);
             };
@@ -363,17 +361,17 @@
         // The following code deals with deserializing some kind of Blob or
         // TypedArray. First we separate out the type of data we're dealing
         // with from the data itself.
-        var serializedString = value.substring(TYPE_SERIALIZED_MARKER_LENGTH);
-        var type = value.substring(
+        const serializedString = value.substring(TYPE_SERIALIZED_MARKER_LENGTH);
+        const type = value.substring(
             SERIALIZED_MARKER_LENGTH,
             TYPE_SERIALIZED_MARKER_LENGTH
         );
 
         // Fill the string into a ArrayBuffer.
         // 2 bytes for each char.
-        var buffer = new ArrayBuffer(serializedString.length * 2);
-        var bufferView = new Uint16Array(buffer);
-        for (var i = serializedString.length - 1; i >= 0; i--) {
+        const buffer = new ArrayBuffer(serializedString.length * 2);
+        const bufferView = new Uint16Array(buffer);
+        for (let i = serializedString.length - 1; i >= 0; i--) {
             bufferView[i] = serializedString.charCodeAt(i);
         }
 
@@ -403,21 +401,21 @@
             case TYPE_FLOAT64ARRAY:
                 return new Float64Array(buffer);
             default:
-                throw new Error('Unkown type: ' + type);
+                throw new Error(`Unkown type: ${type}`);
         }
     }
 
     // _bufferToString just like in LocalStorage
     function _bufferToString(buffer) {
-        var str = '';
-        var uint16Array = new Uint16Array(buffer);
+        let str = '';
+        const uint16Array = new Uint16Array(buffer);
 
         try {
             str = String.fromCharCode.apply(null, uint16Array);
         } catch (e) {
             // This is a fallback implementation in case the first one does
             // not work. This is required to get the phantomjs passing...
-            for (var i = 0; i < uint16Array.length; i++) {
+            for (let i = 0; i < uint16Array.length; i++) {
                 str += String.fromCharCode(uint16Array[i]);
             }
         }
@@ -428,34 +426,32 @@
     function executeCallback(promise, callback) {
         if (callback) {
             promise.then(
-                function(result) {
+                result => {
                     callback(null, result);
                 },
-                function(error) {
+                error => {
                     callback(error);
                 }
             );
         }
     }
 
-    var dummyStorageDriver = {
+    const dummyStorageDriver = {
         _driver: 'dummyStorageDriver',
-        _initStorage: _initStorage,
+        _initStorage,
         // _supports: function() { return true; }
-        iterate: iterate,
-        getItem: getItem,
-        setItem: setItem,
-        removeItem: removeItem,
-        clear: clear,
-        length: length,
-        key: key,
-        keys: keys
+        iterate,
+        getItem,
+        setItem,
+        removeItem,
+        clear,
+        length,
+        key,
+        keys
     };
 
     if (typeof define === 'function' && define.amd) {
-        define('dummyStorageDriver', function() {
-            return dummyStorageDriver;
-        });
+        define('dummyStorageDriver', () => dummyStorageDriver);
     } else if (
         typeof module !== 'undefined' &&
         module.exports &&

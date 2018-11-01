@@ -14,38 +14,38 @@
     </script>
     <script src="../dist/localforage.js"></script>
     <script>
-      function log() {
+      function log(...args) {
         try {
-          console.log.apply(console, arguments);
+          console.log(...args);
         } catch (e) {
           /**/
         }
 
-        var output = document.getElementById('output');
-        for (var i = 0, len = arguments.length; i < len; i++) {
-          output.innerHTML += ('<p>' + String(arguments[i]) + '</p>');
+        const output = document.getElementById('output');
+        for (let i = 0, len = args.length; i < len; i++) {
+          output.innerHTML += (`<p>${String(args[i])}</p>`);
         }
       }
 
-      log('Promises were available: ' + !!window.originalPromise);
+      log(`Promises were available: ${!!window.originalPromise}`);
 
-      var key = 'STORE_KEY';
+      const key = 'STORE_KEY';
       // var value = 'What we save offline';
-      var value = typeof Uint8Array !== 'undefined' ? new Uint8Array(8) : [];
+      const value = typeof Uint8Array !== 'undefined' ? new Uint8Array(8) : [];
       value[0] = 65;
       // var value = undefined;
-      var UNKNOWN_KEY = 'unknown_key';
+      const UNKNOWN_KEY = 'unknown_key';
 
-      localforage.setItem(key, value, function() {
-        log('Saved: ' + value);
+      localforage.setItem(key, value, () => {
+        log(`Saved: ${value}`);
 
-        localforage.getItem(key, function(err, readValue) {
+        localforage.getItem(key, (err, readValue) => {
           log('Read: ', readValue);
         });
 
         // Since this key hasn't been set yet, we'll get a null value
-        localforage.getItem(UNKNOWN_KEY, function(err, readValue) {
-          log('Result of reading ' + UNKNOWN_KEY, readValue);
+        localforage.getItem(UNKNOWN_KEY, (err, readValue) => {
+          log(`Result of reading ${UNKNOWN_KEY}`, readValue);
         });
       });
     </script>

@@ -15,10 +15,9 @@ import getCallback from '../utils/getCallback';
  * Licensed under the MIT license.
  */
 
-function createDbTable(t, dbInfo, callback, errorCallback) {
+function createDbTable(t, { storeName }, callback, errorCallback) {
     t.executeSql(
-        `CREATE TABLE IF NOT EXISTS ${dbInfo.storeName} ` +
-            '(id INTEGER PRIMARY KEY, key unique, value)',
+        `${`CREATE TABLE IF NOT EXISTS ${storeName} `}(id INTEGER PRIMARY KEY, key unique, value)`,
         [],
         callback,
         errorCallback
@@ -28,13 +27,13 @@ function createDbTable(t, dbInfo, callback, errorCallback) {
 // Open the WebSQL database (automatically creates one if one didn't
 // previously exist), using any options set in the config.
 function _initStorage(options) {
-    var self = this;
-    var dbInfo = {
+    const self = this;
+    const dbInfo = {
         db: null
     };
 
     if (options) {
-        for (var i in options) {
+        for (const i in options) {
             dbInfo[i] =
                 typeof options[i] !== 'string'
                     ? options[i].toString()
@@ -42,7 +41,7 @@ function _initStorage(options) {
         }
     }
 
-    var dbInfoPromise = new Promise(function(resolve, reject) {
+    const dbInfoPromise = new Promise((resolve, reject) => {
         // Open the database; the openDatabase API will automatically
         // create it for us if it doesn't exist.
         try {
@@ -57,15 +56,15 @@ function _initStorage(options) {
         }
 
         // Create our key/value table if it doesn't exist.
-        dbInfo.db.transaction(function(t) {
+        dbInfo.db.transaction(t => {
             createDbTable(
                 t,
                 dbInfo,
-                function() {
+                () => {
                     self._dbInfo = dbInfo;
                     resolve();
                 },
-                function(t, error) {
+                (t, error) => {
                     reject(error);
                 }
             );
@@ -81,20 +80,20 @@ function tryExecuteSql(t, dbInfo, sqlStatement, args, callback, errorCallback) {
         sqlStatement,
         args,
         callback,
-        function(t, error) {
+        (t, error) => {
             if (error.code === error.SYNTAX_ERR) {
                 t.executeSql(
                     'SELECT name FROM sqlite_master ' +
                         "WHERE type='table' AND name = ?",
                     [dbInfo.storeName],
-                    function(t, results) {
-                        if (!results.rows.length) {
+                    (t, { rows }) => {
+                        if (!rows.length) {
                             // if the table is missing (was deleted)
                             // re-create it table and retry
                             createDbTable(
                                 t,
                                 dbInfo,
-                                function() {
+                                () => {
                                     t.executeSql(
                                         sqlStatement,
                                         args,
@@ -119,16 +118,16 @@ function tryExecuteSql(t, dbInfo, sqlStatement, args, callback, errorCallback) {
 }
 
 function getItem(key, callback) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
@@ -136,9 +135,9 @@ function getItem(key, callback) {
                             dbInfo.storeName
                         } WHERE key = ? LIMIT 1`,
                         [key],
-                        function(t, results) {
-                            var result = results.rows.length
-                                ? results.rows.item(0).value
+                        (t, { rows }) => {
+                            let result = rows.length
+                                ? rows.item(0).value
                                 : null;
 
                             // Check to see if this is serialized content we need to
@@ -149,7 +148,7 @@ function getItem(key, callback) {
 
                             resolve(result);
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -163,27 +162,27 @@ function getItem(key, callback) {
 }
 
 function iterate(iterator, callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
+            .then(() => {
+                const dbInfo = self._dbInfo;
 
-                dbInfo.db.transaction(function(t) {
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
                         `SELECT * FROM ${dbInfo.storeName}`,
                         [],
-                        function(t, results) {
-                            var rows = results.rows;
-                            var length = rows.length;
+                        (t, results) => {
+                            const rows = results.rows;
+                            const length = rows.length;
 
-                            for (var i = 0; i < length; i++) {
-                                var item = rows.item(i);
-                                var result = item.value;
+                            for (let i = 0; i < length; i++) {
+                                const item = rows.item(i);
+                                let result = item.value;
 
                                 // Check to see if this is serialized content
                                 // we need to unpack.
@@ -205,7 +204,7 @@ function iterate(iterator, callback) {
 
                             resolve();
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -219,14 +218,14 @@ function iterate(iterator, callback) {
 }
 
 function _setItem(key, value, callback, retriesLeft) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
+            .then(() => {
                 // The localStorage API doesn't return undefined values in an
                 // "expected" way, so undefined is always cast to null in all
                 // drivers. See: https://github.com/mozilla/localForage/pull/42
@@ -235,31 +234,31 @@ function _setItem(key, value, callback, retriesLeft) {
                 }
 
                 // Save the original value to pass to the callback.
-                var originalValue = value;
+                const originalValue = value;
 
-                var dbInfo = self._dbInfo;
-                dbInfo.serializer.serialize(value, function(value, error) {
+                const dbInfo = self._dbInfo;
+                dbInfo.serializer.serialize(value, (value, error) => {
                     if (error) {
                         reject(error);
                     } else {
                         dbInfo.db.transaction(
-                            function(t) {
+                            t => {
                                 tryExecuteSql(
                                     t,
                                     dbInfo,
-                                    `INSERT OR REPLACE INTO ${
+                                    `${`INSERT OR REPLACE INTO ${
                                         dbInfo.storeName
-                                    } ` + '(key, value) VALUES (?, ?)',
+                                    } `}(key, value) VALUES (?, ?)`,
                                     [key, value],
-                                    function() {
+                                    () => {
                                         resolve(originalValue);
                                     },
-                                    function(t, error) {
+                                    (t, error) => {
                                         reject(error);
                                     }
                                 );
                             },
-                            function(sqlError) {
+                            sqlError => {
                                 // The transaction failed; check
                                 // to see if it's a quota error.
                                 if (sqlError.code === sqlError.QUOTA_ERR) {
@@ -300,25 +299,25 @@ function setItem(key, value, callback) {
 }
 
 function removeItem(key, callback) {
-    var self = this;
+    const self = this;
 
     key = normalizeKey(key);
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
                         `DELETE FROM ${dbInfo.storeName} WHERE key = ?`,
                         [key],
-                        function() {
+                        () => {
                             resolve();
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -334,23 +333,23 @@ function removeItem(key, callback) {
 // Deletes every item in the table.
 // TODO: Find out if this resets the AUTO_INCREMENT number.
 function clear(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
                         `DELETE FROM ${dbInfo.storeName}`,
                         [],
-                        function() {
+                        () => {
                             resolve();
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -366,25 +365,25 @@ function clear(callback) {
 // Does a simple `COUNT(key)` to get the number of items stored in
 // localForage.
 function length(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     // Ahhh, SQL makes this one soooooo easy.
                     tryExecuteSql(
                         t,
                         dbInfo,
                         `SELECT COUNT(key) as c FROM ${dbInfo.storeName}`,
                         [],
-                        function(t, results) {
-                            var result = results.rows.item(0).c;
+                        (t, { rows }) => {
+                            const result = rows.item(0).c;
                             resolve(result);
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -405,14 +404,14 @@ function length(callback) {
 // procedure for the `setItem()` SQL would solve this problem?
 // TODO: Don't change ID on `setItem()`.
 function key(n, callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
@@ -420,13 +419,13 @@ function key(n, callback) {
                             dbInfo.storeName
                         } WHERE id = ? LIMIT 1`,
                         [n + 1],
-                        function(t, results) {
-                            var result = results.rows.length
-                                ? results.rows.item(0).key
+                        (t, { rows }) => {
+                            const result = rows.length
+                                ? rows.item(0).key
                                 : null;
                             resolve(result);
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -440,29 +439,29 @@ function key(n, callback) {
 }
 
 function keys(callback) {
-    var self = this;
+    const self = this;
 
-    var promise = new Promise(function(resolve, reject) {
+    const promise = new Promise((resolve, reject) => {
         self
             .ready()
-            .then(function() {
-                var dbInfo = self._dbInfo;
-                dbInfo.db.transaction(function(t) {
+            .then(() => {
+                const dbInfo = self._dbInfo;
+                dbInfo.db.transaction(t => {
                     tryExecuteSql(
                         t,
                         dbInfo,
                         `SELECT key FROM ${dbInfo.storeName}`,
                         [],
-                        function(t, results) {
-                            var keys = [];
+                        (t, { rows }) => {
+                            const keys = [];
 
-                            for (var i = 0; i < results.rows.length; i++) {
-                                keys.push(results.rows.item(i).key);
+                            for (let i = 0; i < rows.length; i++) {
+                                keys.push(rows.item(i).key);
                             }
 
                             resolve(keys);
                         },
-                        function(t, error) {
+                        (t, error) => {
                             reject(error);
                         }
                     );
@@ -478,18 +477,18 @@ function keys(callback) {
 // https://www.w3.org/TR/webdatabase/#databases
 // > There is no way to enumerate or delete the databases available for an origin from this API.
 function getAllStoreNames(db) {
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
         db.transaction(
-            function(t) {
+            t => {
                 t.executeSql(
                     'SELECT name FROM sqlite_master ' +
                         "WHERE type='table' AND name <> '__WebKitDatabaseInfoTable__'",
                     [],
-                    function(t, results) {
-                        var storeNames = [];
+                    (t, { rows }) => {
+                        const storeNames = [];
 
-                        for (var i = 0; i < results.rows.length; i++) {
-                            storeNames.push(results.rows.item(i).name);
+                        for (let i = 0; i < rows.length; i++) {
+                            storeNames.push(rows.item(i).name);
                         }
 
                         resolve({
@@ -497,12 +496,12 @@ function getAllStoreNames(db) {
                             storeNames
                         });
                     },
-                    function(t, error) {
+                    (t, error) => {
                         reject(error);
                     }
                 );
             },
-            function(sqlError) {
+            sqlError => {
                 reject(sqlError);
             }
         );
@@ -512,20 +511,20 @@ function getAllStoreNames(db) {
 function dropInstance(options, callback) {
     callback = getCallback.apply(this, arguments);
 
-    var currentConfig = this.config();
+    const currentConfig = this.config();
     options = (typeof options !== 'function' && options) || {};
     if (!options.name) {
         options.name = options.name || currentConfig.name;
         options.storeName = options.storeName || currentConfig.storeName;
     }
 
-    var self = this;
-    var promise;
+    const self = this;
+    let promise;
     if (!options.name) {
         promise = Promise.reject('Invalid arguments');
     } else {
-        promise = new Promise(function(resolve) {
-            var db;
+        promise = new Promise(resolve => {
+            let db;
             if (options.name === currentConfig.name) {
                 // use the db reference of the current instance
                 db = self._dbInfo.db;
@@ -542,69 +541,68 @@ function dropInstance(options, callback) {
                     storeNames: [options.storeName]
                 });
             }
-        }).then(function(operationInfo) {
-            return new Promise(function(resolve, reject) {
-                operationInfo.db.transaction(
-                    function(t) {
-                        function dropTable(storeName) {
-                            return new Promise(function(resolve, reject) {
-                                t.executeSql(
-                                    `DROP TABLE IF EXISTS ${storeName}`,
-                                    [],
-                                    function() {
-                                        resolve();
-                                    },
-                                    function(t, error) {
-                                        reject(error);
-                                    }
-                                );
-                            });
-                        }
+        }).then(
+            ({ db, storeNames }) =>
+                new Promise((resolve, reject) => {
+                    db.transaction(
+                        t => {
+                            function dropTable(storeName) {
+                                return new Promise((resolve, reject) => {
+                                    t.executeSql(
+                                        `DROP TABLE IF EXISTS ${storeName}`,
+                                        [],
+                                        () => {
+                                            resolve();
+                                        },
+                                        (t, error) => {
+                                            reject(error);
+                                        }
+                                    );
+                                });
+                            }
 
-                        var operations = [];
-                        for (
-                            var i = 0, len = operationInfo.storeNames.length;
-                            i < len;
-                            i++
-                        ) {
-                            operations.push(
-                                dropTable(operationInfo.storeNames[i])
-                            );
-                        }
+                            const operations = [];
+                            for (
+                                let i = 0, len = storeNames.length;
+                                i < len;
+                                i++
+                            ) {
+                                operations.push(dropTable(storeNames[i]));
+                            }
 
-                        Promise.all(operations)
-                            .then(function() {
-                                resolve();
-                            })
-                            .catch(function(e) {
-                                reject(e);
-                            });
-                    },
-                    function(sqlError) {
-                        reject(sqlError);
-                    }
-                );
-            });
-        });
+                            Promise.all(operations)
+                                .then(() => {
+                                    resolve();
+                                })
+                                .catch(e => {
+                                    reject(e);
+                                });
+                        },
+                        sqlError => {
+                            reject(sqlError);
+                        }
+                    );
+                })
+        );
     }
 
     executeCallback(promise, callback);
     return promise;
 }
 
-var webSQLStorage = {
+const webSQLStorage = {
     _driver: 'webSQLStorage',
-    _initStorage: _initStorage,
+    _initStorage,
     _support: isWebSQLValid(),
-    iterate: iterate,
-    getItem: getItem,
-    setItem: setItem,
-    removeItem: removeItem,
-    clear: clear,
-    length: length,
-    key: key,
-    keys: keys,
-    dropInstance: dropInstance
+    iterate,
+    getItem,
+    setItem,
+    removeItem,
+    clear,
+    length,
+    key,
+    keys,
+    dropInstance
 };
 
 export default webSQLStorage;

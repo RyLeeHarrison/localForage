@@ -1,8 +1,5 @@
-export default function getCallback() {
-    if (
-        arguments.length &&
-        typeof arguments[arguments.length - 1] === 'function'
-    ) {
-        return arguments[arguments.length - 1];
+export default function getCallback(...args) {
+    if (args.length && typeof args[args.length - 1] === 'function') {
+        return args[args.length - 1];
     }
 }

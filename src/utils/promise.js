@@ -5,4 +5,5 @@ if (typeof Promise === 'undefined') {
     // a global promise object, but it would throw anyway later.
     require('lie/polyfill');
 }
+
 export default Promise;

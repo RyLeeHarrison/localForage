@@ -16,8 +16,8 @@
         try {
             window.originalIdbOpen = window.indexedDB.open;
             window.indexedDB.open = function faultyIdbOpen() {
-                var openreq = {};
-                setTimeout(function() {
+                const openreq = {};
+                setTimeout(() => {
                     if (typeof openreq.onerror === 'function') {
                         openreq.onerror(new Event(new Error('OpenDatabase Faulty Driver Test!')));
                     }

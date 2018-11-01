@@ -4,17 +4,17 @@
 this.mocha.setup('bdd');
 
 function runTests() {
-    var runner = this.mocha.run();
+    const runner = this.mocha.run();
 
-    var failedTests = [];
+    const failedTests = [];
 
-    runner.on('end', function() {
+    runner.on('end', () => {
         window.mochaResults = runner.stats;
         window.mochaResults.reports = failedTests;
     });
 
     function flattenTitles(test) {
-        var titles = [];
+        const titles = [];
 
         while (test.parent.title) {
             titles.push(test.parent.title);
@@ -24,12 +24,12 @@ function runTests() {
         return titles.reverse();
     }
 
-    function logFailure(test, err) {
+    function logFailure(test, { message, stack }) {
         failedTests.push({
             name: test.title,
             result: false,
-            message: err.message,
-            stack: err.stack,
+            message: message,
+            stack: stack,
             titles: flattenTitles(test)
         });
     }
@@ -40,23 +40,23 @@ function runTests() {
 if (!Array.prototype.forEach) {
     Array.prototype.forEach = function(callback, thisArg) {
         if (typeof callback !== 'function') {
-            throw new TypeError(callback + ' is not a function!');
+            throw new TypeError(`${callback} is not a function!`);
         }
-        var len = this.length;
-        for (var i = 0; i < len; i++) {
+        const len = this.length;
+        for (let i = 0; i < len; i++) {
             callback.call(thisArg, this[i], i, this);
         }
     };
 }
 
-var require = this.require;
+const require = this.require;
 if (require) {
     requirejs.config({
         paths: {
             localforage: '/dist/localforage'
         }
     });
-    require(['localforage'], function(localforage) {
+    require(['localforage'], localforage => {
         window.localforage = localforage;
 
         require([

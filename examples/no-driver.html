@@ -18,26 +18,26 @@
     </script>
     <script src="../dist/localforage.js"></script>
     <script>
-      localforage.ready(function() {
-          console.log('ready', arguments);
+      localforage.ready(function(...args) {
+          console.log('ready', args);
 
-          localforage.setItem('testKey', 'testValue').then(function() {}, function() {
-            console.log('setItem: ', arguments);
+          localforage.setItem('testKey', 'testValue').then(() => {}, function(...args) {
+            console.log('setItem: ', args);
           });
 
-          localforage.getItem('testKey').then(function() {}, function() {
-            console.log('getItem: ', arguments);
+          localforage.getItem('testKey').then(() => {}, function(...args) {
+            console.log('getItem: ', args);
           });
           
         })
-        .then(function() {
+        .then(() => {
           
-        }, function() {
-          console.log('ready().then', arguments);
+        }, function(...args) {
+          console.log('ready().then', args);
           console.log('localforage.driver():', localforage.driver());
 
-          localforage.setDriver(localforage.LOCALSTORAGE).then(function() {}, function() {
-            console.log('setDriver', arguments);
+          localforage.setDriver(localforage.LOCALSTORAGE).then(() => {}, function(...args) {
+            console.log('setDriver', args);
           });
         });
     </script>

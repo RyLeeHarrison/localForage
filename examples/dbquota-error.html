@@ -8,17 +8,15 @@
     <script src="../dist/localforage.js"></script>
     <script>
       // Forcing WEBSQL here. Feel free to switch to other drivers :)
-      localforage.setDriver(localforage.WEBSQL).then(function() {
-        return localforage.ready();
+      localforage.setDriver(localforage.WEBSQL).then(() => localforage.ready()).then(() => {
+        console.log(`ready: ${localforage.driver()}`);
       }).then(() => {
-        console.log('ready: ' + localforage.driver());
-      }).then(() => {
-        var overall = Promise.resolve();
+        let overall = Promise.resolve();
         for (let i = 0; i < 1; i++) {
           overall = overall.then(() => {
             return wait(2000).then(() => (+new Date()) / 1000 | 0);
           }).then((timestamp) => {
-            var data = new Uint32Array(2*1024*1024);
+            const data = new Uint32Array(2*1024*1024);
             data[0] = timestamp;
             return localforage.setItem(`bigdata${i}`, data).then(
               data => console.log(`setItem${i} resolved`, data[0]),
@@ -47,7 +45,7 @@
         e => console.log('Error', e));
 
       function wait(ms) {
-        return new Promise(function(resolve) {
+        return new Promise(resolve => {
           resolve();
         });
       }

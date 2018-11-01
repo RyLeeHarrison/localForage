@@ -1,11 +1,11 @@
 /* global navigator:true, window:true, Modernizr:true, describe:true, expect:true, it:true, xit:true, before:true, beforeEach:true, after:true*/
-var DRIVERS = [
+const DRIVERS = [
     localforage.INDEXEDDB,
     localforage.LOCALSTORAGE,
     localforage.WEBSQL
 ];
 
-DRIVERS.forEach(function(driverName) {
+DRIVERS.forEach(driverName => {
     if (
         (!Modernizr.indexeddb && driverName === localforage.INDEXEDDB) ||
         (!Modernizr.localstorage && driverName === localforage.LOCALSTORAGE) ||
@@ -16,9 +16,7 @@ DRIVERS.forEach(function(driverName) {
         return;
     }
 
-    describe('Service Worker support in ' + driverName, function() {
-        'use strict';
-
+    describe(`Service Worker support in ${driverName}`, () => {
         // Use this until a test is added to Modernizr
         if (!('serviceworker' in Modernizr)) {
             Modernizr.serviceworker = 'serviceWorker' in navigator;
@@ -40,21 +38,17 @@ DRIVERS.forEach(function(driverName) {
             return;
         }
 
-        before(function(done) {
+        before(done => {
             navigator.serviceWorker
                 .register('/test/serviceworker-client.js')
-                .then(function() {
-                    return localforage.setDriver(driverName);
-                })
+                .then(() => localforage.setDriver(driverName))
                 .then(done);
         });
 
-        after(function(done) {
+        after(done => {
             navigator.serviceWorker.ready
-                .then(function(registration) {
-                    return registration.unregister();
-                })
-                .then(function(bool) {
+                .then(registration => registration.unregister())
+                .then(bool => {
                     if (bool) {
                         done();
                     } else {
@@ -63,7 +57,7 @@ DRIVERS.forEach(function(driverName) {
                 });
         });
 
-        beforeEach(function(done) {
+        beforeEach(done => {
             localforage.clear(done);
         });
 
@@ -71,36 +65,32 @@ DRIVERS.forEach(function(driverName) {
             driverName === localforage.LOCALSTORAGE ||
             driverName === localforage.WEBSQL
         ) {
-            it.skip(driverName + ' is not supported in service workers');
+            it.skip(`${driverName} is not supported in service workers`);
             return;
         }
 
-        xit('should set a value on registration', function(done) {
+        xit('should set a value on registration', done => {
             navigator.serviceWorker.ready
-                .then(function() {
-                    return localforage.getItem('service worker registration');
-                })
-                .then(function(result) {
+                .then(() => localforage.getItem('service worker registration'))
+                .then(result => {
                     expect(result).to.equal('serviceworker present');
                     done();
                 })
-                .catch(function(error) {
+                .catch(error => {
                     done(error);
                 });
         });
 
-        it('saves data', function(done) {
-            var messageChannel = new MessageChannel();
-            messageChannel.port1.onmessage = function(event) {
-                expect(event.data.body).to.be(
-                    'I have been set using ' + driverName
-                );
+        it('saves data', done => {
+            const messageChannel = new MessageChannel();
+            messageChannel.port1.onmessage = ({ data }) => {
+                expect(data.body).to.be(`I have been set using ${driverName}`);
                 done();
             };
 
             navigator.serviceWorker.ready
-                .then(function(registration) {
-                    registration.active.postMessage(
+                .then(({ active }) => {
+                    active.postMessage(
                         {
                             driver: driverName,
                             value: 'I have been set'
@@ -108,7 +98,7 @@ DRIVERS.forEach(function(driverName) {
                         [messageChannel.port2]
                     );
                 })
-                .catch(function(error) {
+                .catch(error => {
                     done(error);
                 });
         });
